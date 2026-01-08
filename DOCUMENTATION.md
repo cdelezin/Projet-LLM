@@ -73,7 +73,7 @@ UPSTASH_VECTOR_REST_TOKEN=votre_token_upstash
 
 ## Étapes réalisées
 
-### ✅ 1. Préparation des données
+### 1. Préparation des données
 
 Fichiers Markdown créés dans `data/` :
 - **profil.md** : Identité, statut, présentation, centres d'intérêt
@@ -84,7 +84,7 @@ Fichiers Markdown créés dans `data/` :
 
 Structure utilisée : titres hiérarchiques (`#`, `##`, `###`) pour faciliter le chunking.
 
-### ✅ 2. Découpage des documents (Chunking)
+### 2. Découpage des documents (Chunking)
 
 **Script** : `chunk_markdown.py`
 
@@ -103,7 +103,7 @@ Le découpage se fait désormais à la volée directement depuis les fichiers Ma
 
 Vous pouvez tout de même utiliser `chunk_markdown.py` seul pour tester le découpage, mais ce n'est pas nécessaire pour l'indexation.
 
-### ✅ 3. Tests unitaires
+### 3. Tests unitaires
 
 Deux tests créés dans `tests/` :
 
@@ -128,7 +128,7 @@ pytest -s
 
 ## Prochaines étapes
 
-### ✅ 3. Indexation dans Upstash
+### 3. Indexation dans Upstash
 
 **Script** : `index_to_upstash.py`
 
@@ -170,7 +170,7 @@ for r in results:
 
 ## Prochaines étapes
 
-### ✅ 4. Création de l'Agent IA
+### 4. Création de l'Agent IA
 
 Un script exécutable d'agent a été ajouté : `run_agent.py`.
 
@@ -188,53 +188,66 @@ python run_agent.py
 
 Documentation : [OpenAI Agents](https://openai.github.io/openai-agents-python/agents/)
 
-### 🔲 5. Connexion Agent ↔ Vecteurs (RAG)
+### 5. Connexion Agent ↔ Vecteurs (RAG)
 
-Ajouter une Tool pour interroger Upstash :
+Le RAG (Retrieval-Augmented Generation) est implémenté dans [run_agent.py](run_agent.py) et [app.py](app.py).
 
+**Fonctionnement** :
+1. Lors d'une question, recherche dans Upstash Vector (top 3 chunks pertinents)
+2. Injection du contexte trouvé dans le prompt de l'agent
+3. L'agent répond en se basant sur les données réelles du portfolio
+
+**Fonction search_portfolio** :
 ```python
 def search_portfolio(query: str) -> str:
-    """Recherche dans le portfolio."""
-    results = index.query(
-        data=query,
-        top_k=3,
-        include_metadata=True
-    )
-    # Formatter et retourner les résultats
-    return "\n\n".join([r.metadata["text"] for r in results])
-
-agent = Agent(
-    name="portfolio-assistant",
-    instructions="...",
-    model="gpt-4.1-nano",
-    functions=[search_portfolio]
-)
+    index = Index(url=..., token=...)
+    results = index.query(data=query, top_k=3, include_metadata=True, include_data=True)
+    # Formater et retourner le contexte
 ```
 
-Documentation : [OpenAI Agents Tools](https://openai.github.io/openai-agents-python/tools/)
-
-### 🔲 6. Interface Streamlit
-
-Créer une interface de chat :
-
+Le contexte est ensuite injecté :
 ```python
-import streamlit as st
-
-st.title("Mon Portfolio IA")
-
-# Chat interface
-if prompt := st.chat_input("Posez-moi une question"):
-    st.chat_message("user").write(prompt)
-    
-    # Appeler l'agent
-    result = Runner.run_sync(agent, prompt)
-    
-    st.chat_message("assistant").write(result.final_output)
+augmented_prompt = f"""Contexte: {context}
+Question: {user_message}
+Réponds en te basant sur le contexte."""
 ```
 
-Documentation : [Streamlit Chat Apps](https://docs.streamlit.io/develop/tutorials/chat-and-llm-apps/build-conversational-apps)
+### 6. Interface Utilisateur (Streamlit)
 
-### 🔲 7. Déploiement Streamlit Cloud
+**Fichier** : [app.py](app.py)
+
+Interface de chat créée avec Streamlit permettant d'interagir avec l'agent RAG.
+
+#### Lancer l'application
+
+```bash
+streamlit run app.py
+```
+
+L'application s'ouvre automatiquement dans le navigateur : http://localhost:8501
+
+#### Fonctionnalités
+
+- **Chat interactif** : Interface moderne avec historique des messages
+- **RAG intégré** : Recherche automatique dans le portfolio avant chaque réponse
+- **Effacer l'historique** : Bouton dans la sidebar pour reset la conversation
+- **Exemples de questions** : Suggestions dans la sidebar
+
+#### Utilisation
+
+1. Posez une question dans le champ de saisie
+2. L'assistant recherche dans le portfolio indexé
+3. Réponse basée sur les données réelles de Camille
+
+**Exemples testés** :
+- "Quel est mon nom ?" → Camille Delezinier
+- "Quelle est ma date de naissance ?" → 13/02/2002
+- "Quel est mon permis ?" → Permis B (véhiculée)
+- "Quelles sont mes compétences en Python ?" → Liste des compétences
+
+## Prochaines étapes
+
+### 7. Déploiement Streamlit Cloud
 
 1. Pousser le code sur GitHub
 2. Connecter le dépôt sur [Streamlit Cloud](https://streamlit.io/cloud)
