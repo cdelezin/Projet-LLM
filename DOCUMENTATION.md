@@ -170,22 +170,20 @@ for r in results:
 
 ## Prochaines étapes
 
-### 🔲 4. Création de l'Agent IA
+### ✅ 4. Création de l'Agent IA
 
-Créer un agent avec `openai-agents` :
+Un script exécutable d'agent a été ajouté : `run_agent.py`.
 
-```python
-from agents import Agent, Runner, ModelSettings
+#### Lancer une question unique
 
-agent = Agent(
-    name="portfolio-assistant",
-    instructions="Tu es un assistant qui répond aux questions sur le profil professionnel de Camille.",
-    model="gpt-4.1-nano",
-    model_settings=ModelSettings(temperature=0.7),
-)
+```bash
+python run_agent.py --prompt "Quelles sont mes compétences en Python ?"
+```
 
-result = Runner.run_sync(agent, "Quelles sont mes compétences en Python ?")
-print(result.final_output)
+#### Ouvrir un chat interactif (terminal)
+
+```bash
+python run_agent.py
 ```
 
 Documentation : [OpenAI Agents](https://openai.github.io/openai-agents-python/agents/)
