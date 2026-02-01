@@ -8,7 +8,7 @@ load_dotenv()
 # Initialiser l'index Upstash Vector
 index = Index.from_env()
 
-# 1. Définir la fonction Tool avec le décorateur @function_tool
+# Définirtion de la fonction Tool
 @function_tool
 def recherche_portfolio(query: str) -> str:
     """
@@ -23,7 +23,7 @@ def recherche_portfolio(query: str) -> str:
         include_metadata=True
     )
     
-    # Si aucun résultat n'est trouvé
+    # Réponse si aucun résultat n'est trouvé
     if not results or len(results) == 0:
         return "Aucune information trouvée dans le portfolio pour cette question."
     
