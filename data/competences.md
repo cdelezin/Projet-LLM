@@ -1,5 +1,3 @@
-# Compétences
-
 ## Analyse et data science
 - Statistiques descriptives et inférentielles
 - Modélisation statistique

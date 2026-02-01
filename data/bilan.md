@@ -1,5 +1,3 @@
-# Bilan personnel et professionnel
-
 ## Une réorientation exigeante mais structurante
 Lorsque j’ai décidé de me réorienter vers le BUT Science des données, je savais que ce choix représentait un véritable défi.
 Après plusieurs années en licence de psychologie, revenir dans une formation technique, exigeante et fortement structurée

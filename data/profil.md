@@ -1,7 +1,5 @@
-# Profil
-
 ## Identité
-Nom : Camille Delezinier  
+Nom et prénom : Camille Delezinier  
 Date de naissance : 13/02/2002  
 Adresse : 25 rue des Genêts, 86550 Mignaloux-Beauvoir  
 Permis : Permis B (véhiculée)  
@@ -21,14 +19,13 @@ développés à la fois en formation académique et en alternance professionnell
 Valider mon BUT Science des données et poursuivre en master,
 avec une orientation privilégiée vers la Data Science et l’analyse décisionnelle.
 
-# Centres d’intérêt
-
-## Sports
+## Centres d’intérêt : 
+**Sports**
 - Natation (6 ans)
 - Course / trail (2 ans)
 - Musculation (2 ans)
 
-## Culture et loisirs
+**Culture et loisirs**
 - Dessin de tatouage
 - Festivals
 - Randonnées

@@ -1,336 +1,80 @@
-# Documentation du Projet LLM - Portfolio avec IA
 
-## Vue d'ensemble du projet
+# Projet LLM - Portfolio interactif
 
-Ce projet implémente un portfolio intelligent utilisant un agent IA capable de répondre aux questions sur votre profil professionnel en utilisant la technique RAG (Retrieval-Augmented Generation).
+Ce projet est réalisé dans le cadre de ma 3e année du BUT Science des Données. Il transforme un portfolio statique en portfolio interactif via un chatbot RAG capable de répondre sur mon parcours, mes compétences et mes expériences professionnelles.
 
-### Architecture
+## Pré-requis / Installation : 
+- Python 3.11, 3.12 ou 3.13
+- Un environnement virtuel (venv)
+- Un compte OpenAI avec une clé API valide
+- Un compte Upstash Vector avec URL + token
+- Une installation des dépendances de requirements.txt
 
-```
-Portfolio Markdown → Chunking → Upstash Vector (base vectorielle) → Agent OpenAI → Streamlit (interface)
-```
+## Lancement du pojet
+Ce projet est une application Streamlit basée sur l'architecture RAG pour interroger mon portfolio. Voici les étapes pour lancer le projet localement :
 
-## Structure du projet
+1. Cloner le dépôt
+	- git clone https://github.com/cdelezin/Projet-LLM.git
 
-```
-projet-iut-potfolio/
-├── data/                      # Fichiers Markdown du portfolio
-│   ├── profil.md
-│   ├── competences.md
-│   ├── parcours.md
-│   ├── projets.md
-│   ├── bilan.md
-├── tests/                     # Tests unitaires
-│   ├── test_openai_agent.py
-│   └── test_upstash_vector.py
-├── chunk_markdown.py          # Script de découpage des documents
-├── requirements.txt           # Dépendances Python
-├── .env                       # Variables d'environnement (à créer)
-└── .env.example              # Template des variables
-```
+2. Configurer les variables d'environnement
+Créez un fichier .env à la racine du projet et ajoutez les clés :
+	  - OPENAI_API_KEY=votre_cle_ici
+	  - UPSTASH_VECTOR_REST_URL=votre_url
+	  - UPSTASH_VECTOR_REST_TOKEN=votre_token
 
-## Installation et configuration
+3. Indexer les données dans Upstach (a ne faire qu'une seule fois)
+	- python indexation.py
 
-### 1. Prérequis
-- Python 3.12 ou 3.13
-- Git
-- Compte Upstash (gratuit)
-- Clé API OpenAI (fournie)
+4. Lancer l'application
+	- streamlit run application.py (http://localhost:8501/)
 
-### 2. Configuration de l'environnement
 
-```bash
-# Créer un environnement virtuel
-python -m venv .venv
+## Programmes / maintenance : 
+Le projet suit cet ordre :
 
-# Activer l'environnement
-.\.venv\Scripts\activate  # Windows PowerShell
+1. FICHIER chunk.py : Découpage des fichiers Markdown 
 
-# Installer les dépendances
-pip install -r requirements.txt
-```
+Explication de la fonction : def get_chunks() 
 
-### 3. Configuration des variables d'environnement
+Cette fonction parcourt le dossier "data" à la recherche de fichiers Markdown (.md). 
+Elle découpe ensuite le contenu de chaque fichier à chaque titre (format ##). 
+Pour chaque morceau obtenu "chunk", elle crée un objet "dictionnaire" qui regroupe le nom du fichier d'origine, sa position dans le document et son contenu. 
+Enfin, elle renvoie une liste structurée contenant tous ces objets.
 
-Créer un fichier `.env` à la racine du projet :
+2. FICHIER indexation.py : Indexation dans Upstash Vector 
 
-```env
-OPENAI_API_KEY=votre_cle_openai
-UPSTASH_VECTOR_REST_URL=https://votre-index.upstash.io
-UPSTASH_VECTOR_REST_TOKEN=votre_token_upstash
-```
+Explication de la fonction : def index_chunks(chunks:list) -> str:
 
-### 4. Configuration Upstash Vector
+Cette fonction récupère les "chunks" générés précédemment par le fichier chunk.py. 
+Pour chaque objet, elle crée un identifiant unique et formate les données en associant le texte brut aux métadonnées. 
+Elle effectue ensuite le transfert vers le serveur "Upstash Vector", ce qui permettra à une IA de consulter et de retrouver ces informations par la suite.
 
-1. Créer un compte sur [Upstash](https://console.upstash.com)
-2. Créer un Vector Index avec :
-   - **Région** : Ireland (eu-west-1)
-   - **Type** : Hybrid
-   - **Dense Embedding Model** : BAAI/bge-m3
-   - **Metric** : COSINE
-   - **Sparse Embedding Model** : BM25
-3. Copier l'URL et le token dans `.env`
+3. Agent RAG -> agentAI.py 
 
-## Étapes réalisées
+Explication de la fonction : def recherche_portfolio(query: str) -> str:
 
-### 1. Préparation des données
+C’est l'outil de recherche de l'IA : le "RAG". 
+Lorsqu'un utilisateur pose une question, cette fonction interroge la base vectorielle "Upstash" pour extraire les trois passages les plus pertinents de mon portfolio. 
+Elle organise ces informations (texte, source et score de fiabilité) pour les transmettre à l'agent. 
+Ce contexte est ensuite renvoyé à l’agent, qui s’en sert pour produire une réponse. 
+Si aucun résultat n’est trouvé, la fonction retourne un message indiquant que l’information n’est pas disponible.
 
-Fichiers Markdown créés dans `data/` :
-- **profil.md** : Identité, statut, présentation, centres d'intérêt
-- **competences.md** : Compétences techniques, langues, soft skills
-- **parcours.md** : Formation, certifications, expériences professionnelles
-- **projets.md** : Projets académiques détaillés
-- **bilan.md** : Bilan personnel et professionnel
 
-Structure utilisée : titres hiérarchiques (`#`, `##`, `###`) pour faciliter le chunking.
+Explication de la fonction : def run_agent_sync(user_message: str) -> str:
 
-### 2. Découpage des documents (Chunking)
+Cette fonction sert de lien entre l'interface utilisateur  et l'agent IA. 
+Elle reçoit le message de l'utilisateur, lance l'exécution de l'agent et attend qu'il termine sa recherche pour récupérer la réponse. 
+La fonction centralise l'envoi de la question et la réception de la réponse, tout en prévoyant un message de secours si l'agent ne parvient pas à répondre.
 
-**Script** : `chunk_markdown.py`
 
-Le script découpe intelligemment les fichiers Markdown en chunks cohérents pour l'indexation vectorielle.
+4. Interface web Streamlit -> application.py 
 
-#### Fonctionnalités du chunker
+Ce code crée l'interface web de dialogue Streamlit qui permet l'intéraction entre l'utilisateur et l'agent. 
+Il gère l'affichage d'un historique de chat pour que la conversation reste fluide et utilise une barre de saisie pour récupérer les questions de l'utilisateur. 
+Lorsqu'un message est envoyé, le script appelle la fonction de l'agent IA et affiche un indicateur de chargement pendant la recherche. 
+Une fois la réponse générée, elle est affichée à l'écran et sauvegardée dans la mémoire de la session.
 
-- **Analyse de structure** : Détecte la hiérarchie des titres
-- **Découpage intelligent** : Par paragraphes, puis par phrases si nécessaire
-- **Overlap configurable** : Chevauchement entre chunks pour préserver le contexte
-- **Métadonnées enrichies** : source, section_path, chunk_index, longueur
+## Auteurs
+- Camille Delezinier
 
-#### Utilisation (intégrée au flux d'indexation)
 
-Le découpage se fait désormais à la volée directement depuis les fichiers Markdown lors de l'indexation (pas de fichier JSON intermédiaire requis).
-
-Vous pouvez tout de même utiliser `chunk_markdown.py` seul pour tester le découpage, mais ce n'est pas nécessaire pour l'indexation.
-
-### 3. Tests unitaires
-
-Deux tests créés dans `tests/` :
-
-#### Test OpenAI Agent (`test_openai_agent.py`)
-Vérifie la connexion et le fonctionnement de l'agent OpenAI avec un test ping-pong simple.
-
-```bash
-pytest tests/test_openai_agent.py -s
-```
-
-#### Test Upstash Vector (`test_upstash_vector.py`)
-Vérifie la connexion à Upstash et teste l'insertion/suppression de vecteurs.
-
-```bash
-pytest tests/test_upstash_vector.py -s
-```
-
-**Lancer tous les tests** :
-```bash
-pytest -s
-```
-
-## Prochaines étapes
-
-### 3. Indexation dans Upstash
-
-**Script** : `index_to_upstash.py`
-
-Le script lit directement les fichiers Markdown du dossier `data/`, les découpe en mémoire, puis les indexe dans Upstash Vector.
-
-#### Utilisation
-
-```bash
-python index_to_upstash.py --input data --max_chars 700 --overlap 100 --batch_size 100 --query "compétences en Python"
-```
-
-Le script effectue automatiquement :
-1. Lecture des `.md` depuis `--input`
-2. Découpage à la volée (`--max_chars`, `--overlap`)
-3. Connexion à Upstash Vector via `.env`
-4. Indexation par batch (`--batch_size`)
-5. Test de recherche (`--query`)
-
-#### Utilisation programmatique
-
-```python
-from upstash_vector import Index
-import os
-
-index = Index(
-    url=os.getenv("UPSTASH_VECTOR_REST_URL"),
-    token=os.getenv("UPSTASH_VECTOR_REST_TOKEN")
-)
-
-results = index.query(
-    data="compétences en Python",
-    top_k=3,
-    include_metadata=True,
-    include_data=True
-)
-for r in results:
-    print(r.score, r.metadata.get("source"), r.data[:120])
-```
-
-## Prochaines étapes
-
-### 4. Création de l'Agent IA
-
-Un script exécutable d'agent a été ajouté : `run_agent.py`.
-
-#### Lancer une question unique
-
-```bash
-python run_agent.py --prompt "Quelles sont mes compétences en Python ?"
-```
-
-#### Ouvrir un chat interactif (terminal)
-
-```bash
-python run_agent.py
-```
-
-Documentation : [OpenAI Agents](https://openai.github.io/openai-agents-python/agents/)
-
-### 5. Connexion Agent ↔ Vecteurs (RAG)
-
-Le RAG (Retrieval-Augmented Generation) est implémenté dans [run_agent.py](run_agent.py) et [app.py](app.py).
-
-**Fonctionnement** :
-1. Lors d'une question, recherche dans Upstash Vector (top 3 chunks pertinents)
-2. Injection du contexte trouvé dans le prompt de l'agent
-3. L'agent répond en se basant sur les données réelles du portfolio
-
-**Fonction search_portfolio** :
-```python
-def search_portfolio(query: str) -> str:
-    index = Index(url=..., token=...)
-    results = index.query(data=query, top_k=3, include_metadata=True, include_data=True)
-    # Formater et retourner le contexte
-```
-
-Le contexte est ensuite injecté :
-```python
-augmented_prompt = f"""Contexte: {context}
-Question: {user_message}
-Réponds en te basant sur le contexte."""
-```
-
-### 6. Interface Utilisateur (Streamlit)
-
-**Fichier** : [app.py](app.py)
-
-Interface de chat créée avec Streamlit permettant d'interagir avec l'agent RAG.
-
-#### Lancer l'application
-
-```bash
-streamlit run app.py
-```
-
-L'application s'ouvre automatiquement dans le navigateur : http://localhost:8501
-
-#### Fonctionnalités
-
-- **Chat interactif** : Interface moderne avec historique des messages
-- **RAG intégré** : Recherche automatique dans le portfolio avant chaque réponse
-- **Effacer l'historique** : Bouton dans la sidebar pour reset la conversation
-- **Exemples de questions** : Suggestions dans la sidebar
-
-#### Utilisation
-
-1. Posez une question dans le champ de saisie
-2. L'assistant recherche dans le portfolio indexé
-3. Réponse basée sur les données réelles de Camille
-
-**Exemples testés** :
-- "Quel est mon nom ?" → Camille Delezinier
-- "Quelle est ma date de naissance ?" → 13/02/2002
-- "Quel est mon permis ?" → Permis B (véhiculée)
-- "Quelles sont mes compétences en Python ?" → Liste des compétences
-
-## Prochaines étapes
-
-### 7. Déploiement Streamlit Cloud
-
-1. Pousser le code sur GitHub
-2. Connecter le dépôt sur [Streamlit Cloud](https://streamlit.io/cloud)
-3. Configurer les secrets (variables d'environnement)
-4. Déployer
-
-Documentation : [Deploy Streamlit App](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/deploy)
-
-## Bonuses possibles
-
-### Sauvegarde des conversations (Upstash Redis)
-- Mémoriser l'historique des échanges
-- Permettre des conversations multi-tours
-- Documentation : [Upstash Redis](https://upstash.com/docs/redis/overall/getstarted)
-
-### Tools supplémentaires
-- Génération de CV au format PDF
-- Envoi d'email de contact
-- Recherche de projets similaires
-
-## Commandes utiles
-
-```bash
-# Activer l'environnement virtuel
-.\.venv\Scripts\activate
-
-# Installer/mettre à jour les dépendances
-pip install -r requirements.txt
-
-# Générer les chunks
-python chunk_markdown.py
-
-# Lancer les tests
-pytest -s
-
-# Lancer l'application Streamlit (quand créée)
-streamlit run app.py
-
-# Git
-git add .
-git commit -m "message"
-git push
-```
-
-## Dépendances (`requirements.txt`)
-
-```
-streamlit==1.52.2           # Interface utilisateur
-openai-agents[redis]==0.6.5 # Agent IA OpenAI
-upstash-vector==0.8.0       # Base de données vectorielle
-pytest==9.0.2                # Tests unitaires
-python-dotenv==1.2.1         # Gestion variables d'environnement
-```
-
-## Notes importantes
-
-- **Modèle limité** : Seul `gpt-4.1-nano` est accessible avec la clé fournie
-- **Pas de HTML** : Utiliser uniquement les composants natifs Streamlit
-- **Clé temporaire** : La clé API sera désactivée après correction
-- **Sécurité** : Ne jamais committer le fichier `.env` (déjà dans `.gitignore`)
-
-## Troubleshooting
-
-### Erreur de connexion OpenAI
-- Vérifier `OPENAI_API_KEY` dans `.env`
-- Vérifier que le modèle est bien `gpt-4.1-nano`
-
-### Erreur Upstash
-- Vérifier `UPSTASH_VECTOR_REST_URL` et `UPSTASH_VECTOR_REST_TOKEN`
-- Vérifier la configuration de l'index (Hybrid, BAAI/bge-m3)
-
-### Tests échouent
-- Vérifier que `.env` est configuré
-- Lancer avec `pytest -s` pour voir les outputs
-- Vérifier la connexion internet
-
-### Chunks incorrects
-- Vérifier la structure des fichiers Markdown (titres, paragraphes)
-- Ajuster `--max_chars` et `--overlap`
-- Vérifier l'encoding UTF-8 des fichiers
-
-## Support
-
-- [Documentation OpenAI Agents](https://openai.github.io/openai-agents-python/)
-- [Documentation Upstash Vector](https://upstash.com/docs/vector)
-- [Documentation Streamlit](https://docs.streamlit.io/)

@@ -1,7 +1,4 @@
-# Parcours académique et professionnel
-
 ## Formation
-
 ### BUT Science des données
 IUT de Niort – Université de Poitiers  
 2024 – 2026
@@ -14,7 +11,7 @@ Université de Poitiers - Faculté de sciences humaines et arts
 Lycée de Cordouan  
 2017 – 2020
 
-## Certifications et formations
+### Certifications et formations
 - BNSSA – Brevet National de Sécurité et de Sauvetage Aquatique (2020)
 - PSE1 / PSE2 – Premiers secours en équipe (2020)
 
